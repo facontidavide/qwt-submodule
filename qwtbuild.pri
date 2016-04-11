@@ -42,8 +42,8 @@ else {
 
 linux-g++ | linux-g++-64 {
     #CONFIG           += separate_debug_info
-    QMAKE_CXXFLAGS   *= -Wfloat-equal
-    QMAKE_CXXFLAGS   *= -Wshadow
+    #QMAKE_CXXFLAGS   *= -Wfloat-equal
+    #QMAKE_CXXFLAGS   *= -Wshadow
     #QMAKE_CXXFLAGS   *= -Wpointer-arith 
     #QMAKE_CXXFLAGS   *= -Wconversion 
     #QMAKE_CXXFLAGS   *= -Wsign-compare 
