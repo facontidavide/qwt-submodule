@@ -194,7 +194,7 @@ public:
     void setAxisFont( int axisId, const QFont &f );
     QFont axisFont( int axisId ) const;
 
-    virtual void setAxisScale( int axisId, double min, double max, double step = 0 );
+    void setAxisScale( int axisId, double min, double max, double step = 0 );
     void setAxisScaleDiv( int axisId, const QwtScaleDiv & );
     void setAxisScaleDraw( int axisId, QwtScaleDraw * );
 

@@ -8,94 +8,153 @@
  *****************************************************************************/
 
 #ifndef QWT_SPLINE_H
-#define QWT_SPLINE_H
+#define QWT_SPLINE_H 1
 
 #include "qwt_global.h"
+#include "qwt_spline_approximation.h"
+#include "qwt_spline_polynomial.h"
 #include <qpolygon.h>
-#include <qvector.h>
+#include <qpainterpath.h>
+#include <qmath.h>
+
+class QwtSplineParametrization;
 
 /*!
-  \brief A class for spline interpolation
+  \brief Base class for a spline interpolation
 
-  The QwtSpline class is used for cubical spline interpolation.
-  Two types of splines, natural and periodic, are supported.
+  Geometric Continuity
 
-  \par Usage:
-  <ol>
-  <li>First call setPoints() to determine the spline coefficients
-      for a tabulated function y(x).
-  <li>After the coefficients have been set up, the interpolated
-      function value for an argument x can be determined by calling
-      QwtSpline::value().
-  </ol>
+    G0: curves are joined
+    G1: first derivatives are proportional at the join point
+        The curve tangents thus have the same direction, but not necessarily the 
+        same magnitude. i.e., C1'(1) = (a,b,c) and C2'(0) = (k*a, k*b, k*c).
+    G2: first and second derivatives are proportional at join point 
 
-  \par Example:
-  \code
-#include <qwt_spline.h>
+  Parametric Continuity
 
-QPolygonF interpolate(const QPolygonF& points, int numValues)
-{
-    QwtSpline spline;
-    if ( !spline.setPoints(points) )
-        return points;
+    C0: curves are joined
+    C1: first derivatives equal
+    C2: first and second derivatives are equal
 
-    QPolygonF interpolatedPoints(numValues);
+  Geometric continuity requires the geometry to be continuous, while parametric 
+  continuity requires that the underlying parameterization be continuous as well.
 
-    const double delta =
-        (points[numPoints - 1].x() - points[0].x()) / (points.size() - 1);
-    for(i = 0; i < points.size(); i++)  / interpolate
-    {
-        const double x = points[0].x() + i * delta;
-        interpolatedPoints[i].setX(x);
-        interpolatedPoints[i].setY(spline.value(x));
-    }
-    return interpolatedPoints;
-}
-  \endcode
+  Parametric continuity of order n implies geometric continuity of order n, but not vice-versa. 
+
+  QwtSpline is a base class for spline interpolations of any continuity.
 */
-
-class QWT_EXPORT QwtSpline
+class QWT_EXPORT QwtSpline: public QwtSplineApproximation
 {
 public:
-    //! Spline type
-    enum SplineType
+    enum BoundaryPosition
     {
-        //! A natural spline
-        Natural,
+        AtBeginning,
+        AtEnd
+    };
 
-        //! A periodic spline
-        Periodic
+    enum BoundaryCondition
+    {
+        Clamped1,
+
+        // Natural := Clamped2 with boundary values: 0.0
+        Clamped2,
+
+        // Parabolic runout := Clamped3 with boundary values: 0.0
+        Clamped3,
+
+        LinearRunout 
     };
 
     QwtSpline();
-    QwtSpline( const QwtSpline & );
+    virtual ~QwtSpline();
 
-    ~QwtSpline();
+    void setBoundaryCondition( BoundaryPosition, int condition );
+    int boundaryCondition( BoundaryPosition ) const;
 
-    QwtSpline &operator=( const QwtSpline & );
+    void setBoundaryValue( BoundaryPosition, double value );
+    double boundaryValue( BoundaryPosition ) const;
 
-    void setSplineType( SplineType );
-    SplineType splineType() const;
+    void setBoundaryConditions( int condition,
+        double valueBegin = 0.0, double valueEnd = 0.0 );
 
-    bool setPoints( const QPolygonF& points );
-    QPolygonF points() const;
+    virtual QPolygonF equidistantPolygon( const QPolygonF &, 
+        double distance, bool withNodes ) const;
 
-    void reset();
+    virtual QPolygonF polygon( const QPolygonF &, double tolerance );
 
-    bool isValid() const;
-    double value( double x ) const;
-
-    const QVector<double> &coefficientsA() const;
-    const QVector<double> &coefficientsB() const;
-    const QVector<double> &coefficientsC() const;
-
-protected:
-    bool buildNaturalSpline( const QPolygonF & );
-    bool buildPeriodicSpline( const QPolygonF & );
+    virtual QPainterPath painterPath( const QPolygonF & ) const;
+    virtual QVector<QLineF> bezierControlLines( const QPolygonF &points ) const = 0;
 
 private:
+    Q_DISABLE_COPY(QwtSpline)
+
     class PrivateData;
     PrivateData *d_data;
+};
+
+/*!
+  \brief Base class for spline interpolations providing a 
+         first order geometric continuity ( G1 ) between adjoing curves
+ */
+class QWT_EXPORT QwtSplineG1: public QwtSpline
+{           
+public:     
+    QwtSplineG1();
+    virtual ~QwtSplineG1();
+};
+
+/*!
+  \brief Base class for spline interpolations providing a 
+         first order parametric continuity ( C1 ) between adjoing curves
+ */
+class QWT_EXPORT QwtSplineC1: public QwtSplineG1
+{
+public:
+    QwtSplineC1();
+    virtual ~QwtSplineC1();
+
+    virtual QPainterPath painterPath( const QPolygonF & ) const;
+    virtual QVector<QLineF> bezierControlLines( const QPolygonF & ) const;
+
+    virtual QPolygonF equidistantPolygon( const QPolygonF &,
+        double distance, bool withNodes ) const;
+
+    // calculating the parametric equations
+    virtual QVector<QwtSplinePolynomial> polynomials( const QPolygonF & ) const;
+    virtual QVector<double> slopes( const QPolygonF & ) const = 0;
+
+    // resolving the boundary conditions
+    virtual double slopeAtBeginning( const QPolygonF &, double slopeNext ) const;
+    virtual double slopeAtEnd( const QPolygonF &, double slopeBefore ) const;
+};
+
+/*!
+  \brief Base class for spline interpolations providing a 
+         second order parametric continuity ( C2 ) between adjoing curves
+ */
+class QWT_EXPORT QwtSplineC2: public QwtSplineC1
+{
+public:
+    enum BoundaryConditionc2
+    {
+        // conditions, that require C2 continuity
+        CubicRunout = LinearRunout + 1, 
+        NotAKnot
+    };
+
+    QwtSplineC2();
+    virtual ~QwtSplineC2();
+
+    virtual QPainterPath painterPath( const QPolygonF & ) const;
+    virtual QVector<QLineF> bezierControlLines( const QPolygonF & ) const;
+
+    virtual QPolygonF equidistantPolygon( const QPolygonF &,
+        double distance, bool withNodes ) const;
+
+    // calculating the parametric equations
+    virtual QVector<QwtSplinePolynomial> polynomials( const QPolygonF & ) const;
+    virtual QVector<double> slopes( const QPolygonF & ) const;
+    virtual QVector<double> curvatures( const QPolygonF & ) const = 0;
 };
 
 #endif

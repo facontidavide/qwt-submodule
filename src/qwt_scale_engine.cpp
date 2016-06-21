@@ -37,14 +37,6 @@ static inline QwtInterval qwtPowInterval( double base, const QwtInterval &interv
             qPow( base, interval.maxValue() ) );
 }
 
-static inline long double qwtIntervalWidthL( const QwtInterval &interval )
-{
-    if ( !interval.isValid() )
-        return 0.0;
-
-    return static_cast<long double>( interval.maxValue() )
-        - static_cast<long double>( interval.minValue() );
-}
 
 #if 1
 
@@ -591,7 +583,7 @@ QwtScaleDiv QwtLinearScaleEngine::divideScale( double x1, double x2,
 {
     QwtInterval interval = QwtInterval( x1, x2 ).normalized();
 
-    if ( qwtIntervalWidthL( interval ) > std::numeric_limits<double>::max() )
+    if ( interval.widthL() > std::numeric_limits<double>::max() )
     {
         qWarning() << "QwtLinearScaleEngine::divideScale: overflow";
         return QwtScaleDiv();
@@ -831,12 +823,7 @@ void QwtLogScaleEngine::autoScale( int maxNumSteps,
 
         if ( linearInterval.maxValue() / linearInterval.minValue() < logBase )
         {
-            // the aligned scale is still less than one step
-            if ( stepSize < 0.0 )
-                stepSize = -qwtLog( logBase, qAbs( stepSize ) );
-            else
-                stepSize = qwtLog( logBase, stepSize );
-
+            stepSize = 0.0;
             return;
         }
     }
@@ -910,16 +897,8 @@ QwtScaleDiv QwtLogScaleEngine::divideScale( double x1, double x2,
         linearScaler.setReference( reference() );
         linearScaler.setMargins( lowerMargin(), upperMargin() );
 
-        if ( stepSize != 0.0 )
-        {
-            if ( stepSize < 0.0 )
-                stepSize = -qPow( logBase, -stepSize );
-            else
-                stepSize = qPow( logBase, stepSize );
-        }
-
         return linearScaler.divideScale( x1, x2,
-            maxMajorSteps, maxMinorSteps, stepSize );
+            maxMajorSteps, maxMinorSteps, 0.0 );
     }
 
     stepSize = qAbs( stepSize );
