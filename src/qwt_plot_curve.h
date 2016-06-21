@@ -95,6 +95,8 @@ public:
         */
         Dots,
 
+        LinesAndDots,
+
         /*!
            Styles >= QwtPlotCurve::UserCurve are reserved for derived
            classes of QwtPlotCurve that overload drawCurve() with

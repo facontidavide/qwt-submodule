@@ -40,7 +40,7 @@ static inline QRectF qwtIntersectedClipRect( const QRectF &rect, QPainter *paint
 
 static void qwtUpdateLegendIconSize( QwtPlotCurve *curve )
 {
-    if ( curve->symbol() && 
+    if ( curve->symbol() &&
         curve->testLegendAttribute( QwtPlotCurve::LegendShowSymbol ) )
     {
         QSize sz = curve->symbol()->boundingRect().size();
@@ -84,7 +84,7 @@ public:
         symbol( NULL ),
         pen( Qt::black ),
         attributes( 0 ),
-        paintAttributes( 
+        paintAttributes(
             QwtPlotCurve::ClipPolygons | QwtPlotCurve::FilterPoints ),
         legendAttributes( 0 )
     {
@@ -240,7 +240,7 @@ QwtPlotCurve::CurveStyle QwtPlotCurve::style() const
   \brief Assign a symbol
 
   The curve will take the ownership of the symbol, hence the previously
-  set symbol will be delete by setting a new one. If \p symbol is 
+  set symbol will be delete by setting a new one. If \p symbol is
   \c NULL no symbol will be drawn.
 
   \param symbol Symbol
@@ -434,6 +434,24 @@ void QwtPlotCurve::drawCurve( QPainter *painter, int style,
         case Dots:
             drawDots( painter, xMap, yMap, canvasRect, from, to );
             break;
+        case LinesAndDots:
+            {
+                 if ( testCurveAttribute( Fitted ) )
+                 {
+                     from = 0;
+                     to = dataSize() - 1;
+                 }
+                 drawLines( painter, xMap, yMap, canvasRect, from, to );
+
+                 QPen prev_pen = painter->pen();
+                 QPen new_pen  = prev_pen;
+                 new_pen.setWidth( prev_pen.width() * 3);
+
+                 painter->setPen( new_pen );
+                 drawDots( painter, xMap, yMap, canvasRect, from, to );
+                 painter->setPen( prev_pen );
+             }
+            break;
         case NoCurve:
         default:
             break;
@@ -492,7 +510,7 @@ void QwtPlotCurve::drawLines( QPainter *painter,
         // then drawing the polyline itself
 
         if ( !doFit && !doFill )
-            doIntegers = true; 
+            doIntegers = true;
     }
 #endif
 
@@ -501,24 +519,24 @@ void QwtPlotCurve::drawLines( QPainter *painter,
     if ( doAlign )
     {
         mapper.setFlag( QwtPointMapper::RoundPoints, true );
-        mapper.setFlag( QwtPointMapper::WeedOutIntermediatePoints, 
+        mapper.setFlag( QwtPointMapper::WeedOutIntermediatePoints,
             testPaintAttribute( FilterPointsAggressive ) );
     }
 
-    mapper.setFlag( QwtPointMapper::WeedOutPoints, 
-        testPaintAttribute( FilterPoints ) || 
+    mapper.setFlag( QwtPointMapper::WeedOutPoints,
+        testPaintAttribute( FilterPoints ) ||
         testPaintAttribute( FilterPointsAggressive ) );
 
     mapper.setBoundingRect( canvasRect );
 
     if ( doIntegers )
     {
-        QPolygon polyline = mapper.toPolygon( 
+        QPolygon polyline = mapper.toPolygon(
             xMap, yMap, data(), from, to );
 
         if ( testPaintAttribute( ClipPolygons ) )
         {
-            polyline = QwtClipper::clipPolygon( 
+            polyline = QwtClipper::clipPolygon(
                 clipRect.toAlignedRect(), polyline, false );
         }
 
@@ -532,7 +550,7 @@ void QwtPlotCurve::drawLines( QPainter *painter,
         {
             if ( doFit )
             {
-                // it might be better to extend and draw the curvePath, but for 
+                // it might be better to extend and draw the curvePath, but for
                 // the moment we keep an implementation, where we translate the
                 // path back to a polyline.
 
@@ -562,7 +580,7 @@ void QwtPlotCurve::drawLines( QPainter *painter,
         {
             if ( testPaintAttribute( ClipPolygons ) )
             {
-                polyline = QwtClipper::clipPolygonF( 
+                polyline = QwtClipper::clipPolygonF(
                     clipRect, polyline, false );
             }
 
@@ -570,7 +588,7 @@ void QwtPlotCurve::drawLines( QPainter *painter,
             {
                 if ( d_data->curveFitter->mode() == QwtCurveFitter::Path )
                 {
-                    const QPainterPath curvePath = 
+                    const QPainterPath curvePath =
                         d_data->curveFitter->fitCurvePath( polyline );
 
                     painter->drawPath( curvePath );
@@ -686,7 +704,7 @@ void QwtPlotCurve::drawDots( QPainter *painter,
     {
         mapper.setFlag( QwtPointMapper::WeedOutPoints, false );
 
-        QPolygonF points = mapper.toPointsF( 
+        QPolygonF points = mapper.toPointsF(
             xMap, yMap, data(), from, to );
 
         QwtPainter::drawPoints( painter, points );
@@ -695,7 +713,7 @@ void QwtPlotCurve::drawDots( QPainter *painter,
     else if ( d_data->paintAttributes & ImageBuffer )
     {
         const QImage image = mapper.toImage( xMap, yMap,
-            data(), from, to, d_data->pen, 
+            data(), from, to, d_data->pen,
             painter->testRenderHint( QPainter::Antialiasing ),
             renderThreadCount() );
 
@@ -726,13 +744,13 @@ void QwtPlotCurve::drawDots( QPainter *painter,
         if ( doAlign )
         {
             const QPolygon points = mapper.toPoints(
-                xMap, yMap, data(), from, to ); 
+                xMap, yMap, data(), from, to );
 
             QwtPainter::drawPoints( painter, points );
         }
         else
         {
-            const QPolygonF points = mapper.toPointsF( 
+            const QPolygonF points = mapper.toPointsF(
                 xMap, yMap, data(), from, to );
 
             QwtPainter::drawPoints( painter, points );
@@ -807,7 +825,7 @@ void QwtPlotCurve::drawSteps( QPainter *painter,
     {
         const QRectF clipRect = qwtIntersectedClipRect( canvasRect, painter );
 
-        const QPolygonF clipped = QwtClipper::clipPolygonF( 
+        const QPolygonF clipped = QwtClipper::clipPolygonF(
             clipRect, polygon, false );
 
         QwtPainter::drawPolyline( painter, clipped );
@@ -932,7 +950,7 @@ void QwtPlotCurve::fillCurve( QPainter *painter,
 }
 
 /*!
-  \brief Complete a polygon to be a closed polygon including the 
+  \brief Complete a polygon to be a closed polygon including the
          area between the original polygon and the baseline.
 
   \param painter Painter
@@ -995,9 +1013,9 @@ void QwtPlotCurve::drawSymbols( QPainter *painter, const QwtSymbol &symbol,
     const QRectF &canvasRect, int from, int to ) const
 {
     QwtPointMapper mapper;
-    mapper.setFlag( QwtPointMapper::RoundPoints, 
+    mapper.setFlag( QwtPointMapper::RoundPoints,
         QwtPainter::roundingAlignment( painter ) );
-    mapper.setFlag( QwtPointMapper::WeedOutPoints, 
+    mapper.setFlag( QwtPointMapper::WeedOutPoints,
         testPaintAttribute( QwtPlotCurve::FilterPoints ) );
 
     const QRectF clipRect = qwtIntersectedClipRect( canvasRect, painter );
@@ -1100,7 +1118,7 @@ int QwtPlotCurve::closestPoint( const QPoint &pos, double *dist ) const
 /*!
    \return Icon representing the curve on the legend
 
-   \param index Index of the legend entry 
+   \param index Index of the legend entry
                 ( ignored as there is only one )
    \param size Icon size
 
@@ -1204,10 +1222,10 @@ void QwtPlotCurve::setSamples( QwtSeriesData<QPointF> *data )
 #ifndef QWT_NO_COMPAT
 
 /*!
-  \brief Initialize the data by pointing to memory blocks which 
+  \brief Initialize the data by pointing to memory blocks which
          are not managed by QwtPlotCurve.
 
-  setRawSamples is provided for efficiency. 
+  setRawSamples is provided for efficiency.
   It is important to keep the pointers
   during the lifetime of the underlying QwtCPointerData class.
 
