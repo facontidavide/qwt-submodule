@@ -1,6 +1,6 @@
 
 add_definitions( -DQWT_NO_SVG )
-add_definitions( -DUSE_OPENGL )
+#add_definitions( -DUSE_OPENGL )
 
 
 include_directories( ./  )
@@ -194,17 +194,17 @@ set( QWT_SRC
      #qwt_plot_glcanvas.h
      #qwt_plot_glcanvas.cpp
 
-     qwt_plot_opengl_canvas.h
-     qwt_plot_opengl_canvas.cpp
+     #qwt_plot_opengl_canvas.h
+     #qwt_plot_opengl_canvas.cpp
     )
 
 add_library(qwt_static ${QWT_SRC})
 
 target_link_libraries(qwt_static
-    GL
+  #  GL
     ${Qt5Widgets_LIBRARIES}
     ${Qt5PrintSupport_LIBRARIES}
     ${Qt5Concurrent_LIBRARIES}
-    ${Qt5OpenGL_LIBRARIES}
+  #  ${Qt5OpenGL_LIBRARIES}
 
     )
