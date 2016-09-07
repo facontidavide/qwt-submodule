@@ -8,8 +8,8 @@
 ################################################################
 
 QWT_VER_MAJ      = 6
-QWT_VER_MIN      = 1
-QWT_VER_PAT      = 3
+QWT_VER_MIN      = 2
+QWT_VER_PAT      = 0
 QWT_VERSION      = $${QWT_VER_MAJ}.$${QWT_VER_MIN}.$${QWT_VER_PAT}
 
 ######################################################################
@@ -32,6 +32,24 @@ QWT_INSTALL_DOCS      = $${QWT_INSTALL_PREFIX}/doc
 QWT_INSTALL_HEADERS   = $${QWT_INSTALL_PREFIX}/include
 QWT_INSTALL_LIBS      = $${QWT_INSTALL_PREFIX}/lib
 
+######################################################################
+# Designer plugin
+# creator/designer load designer plugins from certain default
+# directories ( f.e the path below QT_INSTALL_PREFIX ) and the 
+# directories listed in the QT_PLUGIN_PATH environment variable.
+# When using the path below QWT_INSTALL_PREFIX you need to
+# add $${QWT_INSTALL_PREFIX}/plugins to QT_PLUGIN_PATH in the 
+# runtime environment of designer/creator.
+######################################################################
+
+QWT_INSTALL_PLUGINS   = $${QWT_INSTALL_PREFIX}/plugins/designer
+
+# linux distributors often organize the Qt installation
+# their way and QT_INSTALL_PREFIX doesn't offer a good
+# path. Also QT_INSTALL_PREFIX is only one of the default
+# search paths of the designer - not the Qt creator
+
+#QWT_INSTALL_PLUGINS   = $$[QT_INSTALL_PREFIX]/plugins/designer
 
 ######################################################################
 # Features

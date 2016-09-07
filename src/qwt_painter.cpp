@@ -43,8 +43,9 @@
 bool QwtPainter::d_polylineSplitting = true;
 bool QwtPainter::d_roundingAlignment = true;
 
-static bool qwtIsRasterPaintEngineBuggy()
+static inline bool qwtIsRasterPaintEngineBuggy()
 {
+#if 0
     static int isBuggy = -1; 
     if ( isBuggy < 0 )
     {
@@ -68,6 +69,19 @@ static bool qwtIsRasterPaintEngineBuggy()
     }
 
     return isBuggy == 1;
+#endif
+
+#if QT_VERSION < 0x040800
+    return false;
+#elif QT_VERSION < 0x050000
+    return true;
+#elif QT_VERSION < 0x050100
+    return false;
+#elif QT_VERSION < 0x050400
+    return true;
+#else
+    return false;
+#endif
 }
 
 static inline bool qwtIsClippingNeeded( 
@@ -111,13 +125,11 @@ static inline void qwtDrawPolyline( QPainter *painter,
 
                     doSplit = true;
                 }
-#else
-                // all version < 4.8 don't have the bug for
-                // short lines below 2 pixels difference
+#endif
+                // work around a bug with short lines below 2 pixels difference
                 // in height and width
 
                 doSplit = qwtIsRasterPaintEngineBuggy();
-#endif
             }
             else
             {
@@ -217,6 +229,7 @@ static inline void qwtUnscaleFont( QPainter *painter )
 */
 bool QwtPainter::isX11GraphicsSystem()
 {
+#if QT_VERSION < 0x050000
     static int onX11 = -1;
     if ( onX11 < 0 )
     {
@@ -227,6 +240,11 @@ bool QwtPainter::isX11GraphicsSystem()
     }
 
     return onX11 == 1;
+#else
+    // the X11 paint engine has been removed with Qt5 - so sad, as it was
+    // the best available graphic system around: no bugs + hardware accelerated.
+    return false;
+#endif
 }
 
 /*!
@@ -769,9 +787,10 @@ void QwtPainter::drawFocusRect( QPainter *painter, const QWidget *widget,
     opt.init( widget );
     opt.rect = rect;
     opt.state |= QStyle::State_HasFocus;
+    opt.backgroundColor = widget->palette().color( widget->backgroundRole() );
 
-    widget->style()->drawPrimitive( QStyle::PE_FrameFocusRect,
-        &opt, painter, widget );
+    widget->style()->drawPrimitive(
+        QStyle::PE_FrameFocusRect, &opt, painter, widget );
 }
 
 /*!
@@ -1330,7 +1349,7 @@ void QwtPainter::drawBackgound( QPainter *painter,
 /*!
   \return A pixmap that can be used as backing store
 
-  \param widget Widget, for which the backinstore is intended
+  \param widget Widget, for which the backingstore is intended
   \param size Size of the pixmap
  */
 QPixmap QwtPainter::backingStore( QWidget *widget, const QSize &size )
